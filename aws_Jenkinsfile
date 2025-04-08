@@ -11,9 +11,9 @@ pipeline {
 		// Helm_Branch = 'main'
 		Microservice_Name = 'flink-job'
 		// Helm_Directory_Name = 'website-blog'
-		Namespace = 'flink-stage'
+		Namespace = 'flink-prod'
         ENV_FILE = '/var/lib/jenkins/workspace/flink-canparser-job/.env'
-	EKS_Cluster_Name = 'simpleenergy-dev-eks-cluster'
+	// EKS_Cluster_Name = 'simpleenergy-dev-eks-cluster'
     }
     
     stages {
@@ -109,10 +109,10 @@ pipeline {
                     // Determine the secret ID based on the branch
                     if (env.GIT_BRANCH == 'origin/release/stage') {
                         echo "Fetching secrets for stage environment..."
-                        secretId = "connected-platform/se-stage-flink-canparser-job-envs"
+                        secretId = "connected-platform/se-prod-flink-canparser-job-envs"
                     } else if (env.GIT_BRANCH == 'origin/release/prod') {
                         echo "Fetching secrets for prod environment..."
-                        secretId = '' // Add the correct secret ID for production here
+                        secretId = 'connected-platform/se-prod-flink-canparser-job-envs' // Add the correct secret ID for production here
                     } else {
                         error "Unsupported branch: ${env.GIT_BRANCH}. Only 'release/stage' and 'release/prod' are allowed."
                     }

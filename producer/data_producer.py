@@ -112,4 +112,4 @@ class KafkaDataProducer(CustomKafkaProducer):
         super().send_data(data=payload.message_json, topic=payload.dlq_topic)
         log(f"[Data Producer]: {payload.vin} data of event time {payload.event_time} is sent to {payload.dlq_topic} topic", level=logging.INFO)
         
-        return {"vin": payload.vin, "event_time": payload.event_time , "error": payload.error_tag}
+        return {"vin": payload.vin, "event_time": payload.event_time , "error": str(payload.error_tag)}
