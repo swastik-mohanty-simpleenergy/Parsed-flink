@@ -168,6 +168,14 @@ pipeline {
                 }
             }
         }
+
+        stage('Download dbc file from S3') {
+            steps {
+                sh '''
+                    aws s3 cp s3://se-prod-flink-bucket/dbc_files.zip ./dbc_files.zip 
+                '''
+            }
+        }
         
         stage('build') {
             steps {
