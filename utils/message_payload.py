@@ -1,5 +1,6 @@
 from typing import Dict, Any
 import json
+import time
 
 class MessagePayload:
     """
@@ -34,7 +35,6 @@ class MessagePayload:
         
         # Processed Consumer Variables
         self.signal_value_pair = {}
-        self.filtered_signal_value_pair = {}
         self.can_id_hex = json_message.get('raw_can_id', None)
         self.event_time = json_message.get('event_time', None)
         
@@ -43,6 +43,12 @@ class MessagePayload:
         self.dlq_topic = "can-dlq"
         self.error_tag = None
 
+        # Time Tracking
+        self.time_in_millis_MessagePayload_instance = time.time_ns()
+        self.time_in_millis_decode_start = None
+        self.time_in_millis_decode_end = None
+        self.time_in_millis_producer_start = None
+        self.time_in_millis_producer_end = None
 
     def __str__(self):
         return f"MessagePayload(vin={self.vin})"

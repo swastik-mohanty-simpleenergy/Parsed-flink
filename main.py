@@ -1,5 +1,5 @@
 from producer import KafkaSender 
-from stages import CANMessageDecoder, FilterWrapper
+from stages import CANMessageDecoder
 from utils import KafkaConfig, MessagePayload, setup_flink_environment
 from pyflink.common.typeinfo import Types
 from pyflink.common.watermark_strategy import WatermarkStrategy
@@ -19,7 +19,6 @@ def main():
     kafka_output_config = KafkaConfig.get_kafka_producer_config()
     
     can_decoder = CANMessageDecoder(DBC_FILE_PATH)
-    fault_filter_wrapper = FilterWrapper(json_file=JSON_FILE)
     kafka_sender = KafkaSender(kafka_output_config, JSON_FILE)
 
     watermark_strategy = WatermarkStrategy.for_bounded_out_of_orderness(Duration.of_millis(5000))
@@ -28,7 +27,6 @@ def main():
     processed_stream = (data_stream
                         .map(MessagePayload, output_type=Types.PICKLED_BYTE_ARRAY())  
                         .map(can_decoder.execute, output_type=Types.PICKLED_BYTE_ARRAY())  
-                        .map(fault_filter_wrapper, output_type=Types.PICKLED_BYTE_ARRAY())  
                         .map(kafka_sender, output_type=Types.STRING()))
     
     processed_stream.print() 
