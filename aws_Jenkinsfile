@@ -1,0 +1,263 @@
+pipeline {
+    agent any
+   
+    environment {
+        Git_Credentials = 'GIT'
+		Code_Repo = 'https://github.com/Simpleenergy-Pvt-Ltd/se-flink-canparser-job.git'
+		// Helm_Repo = 'https://github.com/Simpleenergy-Pvt-Ltd/se-eks-manifest.git'
+		GIT_BRANCH = 'release/prod'
+    }
+    
+    stages {
+        stage('versioning') {
+            steps {
+                script {
+                    if(env.GIT_BRANCH == 'release/stage'){
+                        def latestCommit = sh(script: "git rev-list --no-merges -n 1 HEAD", returnStdout: true).trim()
+                        def latestTagInfo = sh(script: "git describe --tags --abbrev=0 ${latestCommit}", returnStdout: true).trim()
+                        def latestTagCommit = sh(script: "git rev-list -n 1 ${latestTagInfo}", returnStdout: true).trim()
+                        if (latestTagCommit != latestCommit) {
+                            error "The latest tag (${latestTagInfo}) is associated with a previous commit (${latestTagCommit}). Please create a new tag for the current commit."
+                        } else {
+                            echo "Latest tag: ${latestTagInfo}"
+                        }
+
+                        env.GIT_TAG = latestTagInfo
+                        echo "Tagged - $latestTagInfo"
+                    }
+                    else if (env.GIT_BRANCH == 'release/prod'){
+                        echo "Release tag: ${env.RELEASE_TAG}"
+                    }
+                }
+            }
+        }
+        
+        stage('Environment') {
+            steps {
+                script {
+                    if(env.GIT_BRANCH == 'master'){
+                        // no dev
+                    }
+                    else if(env.GIT_BRANCH == 'release/stage'){
+                        // Stage environment variables
+                        env.AWS_Account_Id              = "392698013629"
+                        env.AWS_Region                  = "us-east-1"
+                        env.BRANCH                      = "release/stage"
+                        env.DOCKER_IMAGE_REPOSITORY_NAME= "se-stage-flink-canparer"
+                        env.secretId                    = "flink/se-stage-canparser-envs"
+                        env.IMAGE_TAG                   = GIT_TAG
+                        // env.Helm_Branch                 = 'main'
+	                    // env.Microservice_Name           = 'flink-stage'
+		                // env.Helm_Directory_Name         = 'diagnostic'
+		                env.Namespace                   = 'flink-stage'
+		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-canparser-stage/.env'
+                        // env.EKS_Cluster_Name            = 'simpleenergy-dev-eks-cluster'
+                        
+                    }
+                    else if(env.GIT_BRANCH == 'release/prod'){
+                        // Prod environment variables
+                        env.AWS_Account_Id              = "534375227638"
+                        env.AWS_Region                  = "ap-south-1"
+                        env.BRANCH                      = "release/prod"
+                        env.DOCKER_IMAGE_REPOSITORY_NAME= "	se-prod-flink-can-parser"
+                        env.secretId                    = "flink/se-prod-canparser-envs"
+                        env.IMAGE_TAG                   = env.RELEASE_TAG
+                        // env.Helm_Branch                 = 'prod'
+	                    // env.Microservice_Name           = 'flink-prod'
+		                // env.Helm_Directory_Name         = 'diagnostic'
+		                env.Namespace                   = 'flink-prod'
+		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-canparser-prod/.env'
+                        // env.EKS_Cluster_Name            = 'simpleenergy-prod-eks-cluster'
+
+                    }
+                }
+            }
+            
+        }
+        
+        
+        stage('Git Checkout') {
+            steps {
+                script{
+                
+                git branch: "${env.GIT_BRANCH}", credentialsId: "${env.Git_Credentials}", url: "${env.Code_Repo}"   
+            
+                }
+            }
+            
+        }
+        
+
+        
+        stage('Fetch Secrets') {
+            steps {
+                script {
+                    
+                    // Determine the secret ID based on the branch
+                    if (env.GIT_BRANCH == 'release/stage') {
+                        echo "Fetching secrets for stage environment..."
+
+                    } else if (env.GIT_BRANCH == 'release/prod') {
+                        echo "Fetching secrets for prod environment..."
+
+                    } else {
+                        error "Unsupported branch: ${env.GIT_BRANCH}. Only 'release/stage' and 'release/prod' are allowed."
+                    }
+        
+                    try {
+                        echo "Fetching secrets from AWS Secrets Manager..."
+                        
+                        // Fetch secrets from AWS Secrets Manager
+                        def secretsJson = sh(
+                            script: """
+                                aws secretsmanager get-secret-value --secret-id "${secretId}" --region "${AWS_Region}" --query SecretString --output text
+                            """,
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (!secretsJson) {
+                            error "Failed to fetch secrets for secret ID: ${secretId}"
+                        }
+        
+                        // Remove existing .env file if it exists
+                        if (fileExists(ENV_FILE)) {
+                            echo "Removing existing .env file..."
+                            sh "rm -f ${ENV_FILE}"
+                        }
+        
+                        // Write secrets.json to file
+                        writeFile file: 'secrets.json', text: secretsJson
+        
+                        // Parse JSON and convert to key="value" format
+                        def secrets = readJSON file: 'secrets.json'
+                        def envFileContent = secrets.collect { key, value ->
+                            "${key}=\"${value}\""
+                        }.join('\n')
+        
+                        // Write to .env file
+                        writeFile file: ENV_FILE, text: envFileContent
+        
+                        // Clean up temporary secrets.json
+                        sh "rm -f secrets.json"
+        
+                        echo "Secrets fetched and added to ${ENV_FILE} successfully."
+                    } catch (Exception e) {
+                        echo "An error occurred while fetching secrets: ${e.getMessage()}"
+                        error "Failed to fetch and process secrets."
+                    }
+                }
+            }
+        }
+
+        stage('Download dbc file from S3') {
+            steps {
+                sh '''
+                    aws s3 cp s3://se-prod-secrets-bucket/flink/dbc_files.zip ./dbc_files.zip 
+                '''
+            }
+        }
+
+        
+        stage('build') {
+            steps {
+                script {
+                    sh " docker build -t ${env.DOCKER_IMAGE_REPOSITORY_NAME}:${env.IMAGE_TAG} . "
+                }
+            }
+        }
+        
+        stage('push') {
+            steps {
+                script {
+                        sh """
+                            docker tag ${env.DOCKER_IMAGE_REPOSITORY_NAME}:${env.IMAGE_TAG} ${env.AWS_Account_Id}.dkr.ecr.${env.AWS_Region}.amazonaws.com/${env.DOCKER_IMAGE_REPOSITORY_NAME}:${env.IMAGE_TAG}
+                            echo "Pushing image To ECR ..."
+                            aws ecr get-login-password --region ${env.AWS_Region} | docker login --username AWS --password-stdin ${env.AWS_Account_Id}.dkr.ecr.${env.AWS_Region}.amazonaws.com
+                            docker push ${env.AWS_Account_Id}.dkr.ecr.${env.AWS_Region}.amazonaws.com/${env.DOCKER_IMAGE_REPOSITORY_NAME}:${env.IMAGE_TAG}
+                            echo "Docker image pushed successfully."
+                            echo "Removing the Docker image running on Jenkins server..."
+                            docker rmi ${env.DOCKER_IMAGE_REPOSITORY_NAME}:${env.IMAGE_TAG} --force
+                            docker rmi ${env.AWS_Account_Id}.dkr.ecr.${env.AWS_Region}.amazonaws.com/${env.DOCKER_IMAGE_REPOSITORY_NAME}:${env.IMAGE_TAG} --force
+                        """
+                }
+            }
+        }
+
+        
+    // stage('Clone Helm Charts') {
+    //         steps {
+    //             script {
+    //                 dir('helm-charts') {
+    //                     echo "Cloning Helm charts from branch: ${env.Helm_Branch}"
+    //                     git branch: "${env.Helm_Branch}", credentialsId: "${env.Git_Credentials}", url: "${env.Helm_Repo}"
+    //                 }
+    //             }
+    //         }
+    //     }
+
+        // stage('Update tag in Helm Charts') {
+        //     steps {
+        //         script {
+        //             dir('helm-charts') {
+        //                 def valuesFilePath = "${env.Helm_Directory_Name}/values.yaml"
+
+        //                 echo "Updating Helm chart in branch: ${env.Helm_Branch}"
+
+        //                 // Update the tag in the appropriate values file
+        //                 sh """
+        //                     sed -i "s|tag:.*|tag: ${env.IMAGE_TAG}|" ${valuesFilePath}
+        //                 """
+
+        //                 withCredentials([usernamePassword(credentialsId: "${env.Git_Credentials}", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+        //                     sh """
+        //                         git config user.name "${env.GIT_USERNAME}"
+        //                         git config user.email "jenkins@rapyder.com"
+
+        //                         if git diff --quiet ${valuesFilePath}; then
+        //                             echo "No changes detected in ${valuesFilePath}. Skipping commit and push."
+        //                         else
+        //                             echo "Committing and pushing changes..."
+        //                             git add ${valuesFilePath}
+        //                             git commit -m "Updated image tag to ${env.IMAGE_TAG} in ${valuesFilePath}"
+        //                             git push https://${env.GIT_USERNAME}:${env.GIT_PASSWORD}@github.com/Simpleenergy-Pvt-Ltd/se-eks-manifest.git ${env.Helm_Branch}
+        //                         fi
+        //                     """
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        
+        // stage('Deploy to EKS') {
+        //     steps {
+        //         script {
+        //             if (env.GIT_BRANCH == 'release/stage') {
+        //                 echo "Deploying Helm Chart to EKS for Stage..."
+        
+        //                 // Update kubeconfig for the stage cluster
+        //                 sh """
+        //                     aws eks update-kubeconfig --region ${env.AWS_Region} --name ${env.EKS_Cluster_Name}
+        //                 """
+        
+        //                 // Deploy Helm chart
+        //                 dir('helm-charts') {
+        //                     sh """
+        //                         helm upgrade --install ${env.Microservice_Name} ${env.Helm_Directory_Name} \
+        //                         -n ${env.Namespace} --values ${env.Helm_Directory_Name}/values.yaml
+        //                     """
+        //                 }
+        
+        //                 echo "Helm deployment completed successfully for Stage."
+                    
+        //             } 
+        //             else if (env.GIT_BRANCH == 'release/prod') {
+        //                 echo "Production deployments are handled manually. Skipping automatic deployment."
+        //             } 
+        //             else {
+        //                 echo "Unknown branch: ${env.GIT_BRANCH}. No deployment executed."
+        //             }
+        //         }
+        //     }
+        // }
+    }  
+} 
