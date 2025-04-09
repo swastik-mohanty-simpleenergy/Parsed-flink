@@ -28,6 +28,13 @@ class CustomKafkaProducer():
             sasl_mechanism=config['sasl_mechanism'],
             sasl_plain_username=config['sasl_username'],
             sasl_plain_password=config['sasl_password'],
+            linger_ms=10,                  
+            batch_size=32768,              
+            compression_type='lz4',        
+            max_in_flight_requests_per_connection=5,  
+            acks=1,                      
+            retries=5,                     
+            buffer_memory=67108864
         )
 
     def delivery_report(self, err, msg): 
@@ -45,7 +52,6 @@ class CustomKafkaProducer():
             encoded_key = json.dumps(key).encode('utf-8') if key is not None else None
             future = self.producer.send(topic, encoded_data, key=encoded_key)
 
-            # Add proper callback handling
             future.add_callback(lambda meta: log(
                 f"Delivered to {meta.topic}[{meta.partition}] @ {meta.offset}"
             ))
