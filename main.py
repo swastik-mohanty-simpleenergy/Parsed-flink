@@ -24,12 +24,10 @@ def main():
     watermark_strategy = WatermarkStrategy.for_bounded_out_of_orderness(Duration.of_millis(5000))
     data_stream = env.from_source(source=kafka_source, watermark_strategy=watermark_strategy, source_name="Kafka Source")
 
-    processed_stream = (data_stream
-                        .map(MessagePayload, output_type=Types.PICKLED_BYTE_ARRAY())  
-                        .map(can_decoder.execute, output_type=Types.PICKLED_BYTE_ARRAY())  
-                        .map(kafka_sender, output_type=Types.STRING()))
-    
-    processed_stream.print() 
+    data_stream \
+        .map(MessagePayload, output_type=Types.PICKLED_BYTE_ARRAY())  \
+        .map(can_decoder.execute, output_type=Types.PICKLED_BYTE_ARRAY())  \
+        .map(kafka_sender, output_type=Types.STRING())
 
     env.execute("Flink_parser")
 
