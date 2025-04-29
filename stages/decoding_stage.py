@@ -1,4 +1,4 @@
-import cantools
+from cantools import database as CantoolsDB
 from interface import Stage
 from utils.message_payload import MessagePayload
 from pathlib import Path
@@ -14,7 +14,7 @@ class CANMessageDecoder(Stage):
         Args:
             dbc_file_path (str): Path to the DBC file.
         """
-        self.dbc = cantools.database.load_file(dbc_file)
+        self.dbc = CantoolsDB.load_file(dbc_file)
 
     def execute(self, payload: MessagePayload) -> MessagePayload:
         """
@@ -30,9 +30,9 @@ class CANMessageDecoder(Stage):
 
         try:
             message = payload.message_json
-            can_id_hex = payload.can_id_hex
+            can_id_int = payload.can_id_int
             
-            can_id_29bit = int(str(can_id_hex), 16) & 0x1FFFFFFF
+            can_id_29bit = can_id_int & 0x1FFFFFFF
             decoded_message = self.dbc.get_message_by_frame_id(can_id_29bit)
             
             data_bytes = bytearray([

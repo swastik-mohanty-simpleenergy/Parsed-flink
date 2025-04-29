@@ -25,12 +25,9 @@ RUN mkdir /tmp/zip-source
 COPY stages /tmp/zip-source/stages
 COPY producer /tmp/zip-source/producer
 COPY .env /tmp/zip-source/.env
-# COPY dbc_files /tmp/zip-source/dbc_files
 COPY interface /tmp/zip-source/interface
-# COPY jars /tmp/zip-source/jars
 COPY logger /tmp/zip-source/logger
 COPY utils /tmp/zip-source/utils
-# COPY signalTopic.json /tmp/zip-source/signalTopic.json
 
 # Create a zip archive of required components
 RUN cd /tmp/zip-source && zip -r /opt/pyflink-job/dependencies.zip .
@@ -38,20 +35,8 @@ RUN cd /tmp/zip-source && zip -r /opt/pyflink-job/dependencies.zip .
 # # Copy the entire project folder into the container AFTER installing dependencies
 COPY main.py /opt/pyflink-job/
 COPY dbc_files /opt/pyflink-job/dbc_files
-# COPY jars /opt/pyflink-job/jars
-COPY signalTopic.json /opt/pyflink-job/
+COPY canId_TopicMap.json /opt/pyflink-job/
 # COPY .env /opt/pyflink-job/
-
-
-# COPY . /opt/pyflink-job/
-
-
-# Create a dummy JAR file
-# RUN echo "This is a dummy JAR for PyFlink." > /opt/flink/lib/python-container.jar
-# RUN touch /opt/flink/lib/python-container.jar
-# RUN wget -O /opt/flink/lib/python-container.jar \
-    # https://repo1.maven.org/maven2/org/apache/flink/flink-python_2.12/1.20.1/flink-python_2.12-1.20.1.jar
-
 
 # Copy Kafka client JAR if it exists
 # RUN test -f /opt/pyflink-job/jars/kafka-clients-3.4.0.jar && cp /opt/pyflink-job/jars/kafka-clients-3.4.0.jar /opt/flink/lib/ || echo "Kafka client JAR not found, skipping copy"
@@ -69,5 +54,4 @@ RUN wget -P /opt/flink/lib/ https://repo1.maven.org/maven2/org/apache/flink/flin
 
 
 # Set default command to run PyFlink job
-# ENTRYPOINT ["flink", "run", "-m", "kubernetes-cluster", "-py", "/opt/pyflink-job/main.py"]
 ENTRYPOINT ["flink", "run",  "--pyExecutable", "/usr/bin/python3", "--pyfs", "dependencies.zip", "-py", "/opt/pyflink-job/main.py"]

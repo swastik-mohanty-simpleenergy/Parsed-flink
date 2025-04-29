@@ -10,7 +10,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).parent
 DBC_FILE_PATH = str(BASE_DIR / "dbc_files/SimpleOneGen1_V2_2.dbc")
-JSON_FILE = str(BASE_DIR / "signalTopic.json")
+JSON_FILE = str(BASE_DIR / "canId_TopicMap.json")
 
 def main():
 

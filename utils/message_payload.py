@@ -29,14 +29,14 @@ class MessagePayload:
             json.JSONDecodeError: If the binary message is not properly JSON-encoded.
         """
         json_message = json.loads(binary_message)
-        self.message_json = json_message
-        self.vin = json_message.get('vin', None)
-        self.error_flag=False
+        self.message_json : dict = json_message
+        self.vin : str = json_message.get('vin', None)
+        self.error_flag : bool = False
         
         # Processed Consumer Variables
-        self.signal_value_pair = {}
-        self.can_id_hex = json_message.get('raw_can_id', None)
-        self.event_time = json_message.get('event_time', None)
+        self.signal_value_pair : dict = {}
+        self.can_id_int : int = int(json_message.get('raw_can_id', None),16)
+        self.event_time : int = json_message.get('event_time', None)
         
         # Common
         self.success_counts = 0
