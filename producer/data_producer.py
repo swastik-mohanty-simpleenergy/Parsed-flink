@@ -34,7 +34,6 @@ class KafkaDataProducer(CustomKafkaProducer):
         def error_callback(exc):
             log(f"Delivery failed: {exc}", level=logging.ERROR)
         
-        self.message_counter = 0
 
         try:
             payload.time_in_millis_producer_start = time.time_ns()
