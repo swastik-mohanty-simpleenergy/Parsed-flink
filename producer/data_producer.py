@@ -12,6 +12,7 @@ class KafkaDataProducer(CustomKafkaProducer):
     """
     def __init__(self, config, topic_path):
         super().__init__(config)
+        self.message_counter = 0 
         
         with open(topic_path, 'r') as file:
             self.topics : dict = json.load(file)
@@ -32,6 +33,8 @@ class KafkaDataProducer(CustomKafkaProducer):
 
         def error_callback(exc):
             log(f"Delivery failed: {exc}", level=logging.ERROR)
+        
+        self.message_counter = 0
 
         try:
             payload.time_in_millis_producer_start = time.time_ns()
@@ -45,27 +48,28 @@ class KafkaDataProducer(CustomKafkaProducer):
 
             if not isinstance(topics_data, tuple):
 
-                future= super().send_data(  key=self.create_key(vin),
-                                    data=topics_data, 
-                                    topic=self.topics[str(payload.can_id_int)]
-                                )
+                future= super().send_data(  key=self.create_key(vin),data=topics_data,topic=self.topics[str(payload.can_id_int)])
+                self.message_counter += 1
+
                 future.add_callback(delivery_callback)
                 future.add_errback(error_callback)
             
             else:
 
-                future_fault=super().send_data( key=self.create_key(vin),
-                                    data=topics_data[0], 
-                                    topic="Faults"
-                                )
+                future_fault=super().send_data( key=self.create_key(vin), data=topics_data[0] , topic="Faults")
+                self.message_counter += 1
                 future_fault.add_callback(delivery_callback)
                 future_fault.add_errback(error_callback)
-                future_nonFault=super().send_data( key=self.create_key(vin),
-                                    data=topics_data[1], 
-                                    topic=self.topics[str(payload.can_id_int)]["non_faults"]
-                                )
+
+                future_nonFault=super().send_data( key=self.create_key(vin),data=topics_data[1], topic=self.topics[str(payload.can_id_int)]["non_faults"])
+                self.message_counter += 1
                 future_nonFault.add_callback(delivery_callback)
                 future_nonFault.add_errback(error_callback)
+
+            if self.message_counter >= 2000:
+                self.producer.flush(timeout=30)
+                log(f"Flushed {self.message_counter} messages", level=logging.INFO)
+                self.message_counter = 0
 
         except Exception as e:
                 log(f"[Data Producer]: Failed to send the complete processed data to Kafka of {payload.vin} at {payload.event_time} due to error {e}.", level=logging.ERROR)
