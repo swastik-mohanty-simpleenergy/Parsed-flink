@@ -65,7 +65,7 @@ class KafkaDataProducer(CustomKafkaProducer):
                 future_nonFault.add_callback(delivery_callback)
                 future_nonFault.add_errback(error_callback)
 
-            if self.message_counter >= 2000:
+            if self.message_counter >= 4000:
                 self.producer.flush(timeout=30)
                 log(f"Flushed {self.message_counter} messages", level=logging.INFO)
                 self.message_counter = 0
