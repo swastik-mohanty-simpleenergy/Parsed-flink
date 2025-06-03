@@ -10,7 +10,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).parent
 DBC_FILE_PATH = str(BASE_DIR / "dbc_files/SimpleOneGen1_V2_2.dbc")
-JSON_FILE = str(BASE_DIR / "signalTopic.json")
+JSON_FILE = str(BASE_DIR / "canId_TopicMap.json")
 
 def main():
 
@@ -24,12 +24,10 @@ def main():
     watermark_strategy = WatermarkStrategy.for_bounded_out_of_orderness(Duration.of_millis(5000))
     data_stream = env.from_source(source=kafka_source, watermark_strategy=watermark_strategy, source_name="Kafka Source")
 
-    processed_stream = (data_stream
-                        .map(MessagePayload, output_type=Types.PICKLED_BYTE_ARRAY())  
-                        .map(can_decoder.execute, output_type=Types.PICKLED_BYTE_ARRAY())  
-                        .map(kafka_sender, output_type=Types.STRING()))
-    
-    processed_stream.print() 
+    data_stream \
+        .map(MessagePayload, output_type=Types.PICKLED_BYTE_ARRAY())  \
+        .map(can_decoder.execute, output_type=Types.PICKLED_BYTE_ARRAY())  \
+        .map(kafka_sender, output_type=Types.STRING())
 
     env.execute("Flink_parser")
 

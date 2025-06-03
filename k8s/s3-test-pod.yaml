@@ -17,7 +17,7 @@ metadata:
   name: s3-test-create-dir
   namespace: flink-stage
 spec:
-  serviceAccountName: flink
+  serviceAccountName: flink-stage
   containers:
     - name: s3-test
       image: amazonlinux
@@ -25,7 +25,7 @@ spec:
       args:
         - |
           yum install -y aws-cli && \
-          aws s3api put-object --bucket eks-flink-bucket --key test/ && \
-          echo "Created 'test/' in eks-flink-bucket" && \
-          aws s3 ls s3://eks-flink-bucket/
+          aws s3api put-object --bucket eks-flink-stage-bucket --key test/ && \
+          echo "Created 'test/' in eks-flink-stage-bucket" && \
+          aws s3 ls s3://eks-flink-stage-bucket/
   restartPolicy: Never
