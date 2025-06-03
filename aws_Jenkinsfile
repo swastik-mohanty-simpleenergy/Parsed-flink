@@ -152,7 +152,7 @@ pipeline {
         stage('Download dbc file from S3') {
             steps {
                 sh '''
-                    aws s3 cp s3://se-prod-secrets-bucket/flink/dbc_files.zip ./dbc_files.zip 
+                    aws s3 cp s3://se-prod-secrets-bucket/flink/dbc_files ./dbc_files
                 '''
             }
         }
