@@ -50,7 +50,7 @@ pipeline {
 	                    // env.Microservice_Name           = 'flink-stage'
 		                // env.Helm_Directory_Name         = 'diagnostic'
 		                env.Namespace                   = 'flink-stage'
-		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-canparser-stage/.env'
+		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-stage-canparser/.env'
                         // env.EKS_Cluster_Name            = 'simpleenergy-dev-eks-cluster'
                         
                     }
@@ -66,7 +66,7 @@ pipeline {
 	                    // env.Microservice_Name           = 'flink-prod'
 		                // env.Helm_Directory_Name         = 'diagnostic'
 		                env.Namespace                   = 'flink-prod'
-		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-canparser-prod/.env'
+		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-prod-canparser/.env'    
                         // env.EKS_Cluster_Name            = 'simpleenergy-prod-eks-cluster'
 
                     }
