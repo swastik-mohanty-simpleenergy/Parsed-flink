@@ -31,8 +31,13 @@ class CustomKafkaProducer():
             batch_size=16384,               
             request_timeout_ms=180000,
             max_in_flight_requests_per_connection=1,
-            retries=2,
-            acks=1                
+            retries=2147483647,
+            acks=1,
+            retry_backoff_ms = 10000,
+            reconnect_backoff_max_ms=60000,
+            reconnect_backoff_ms=1000,
+            metadata_max_age_ms = 30000,
+         
         )
 
 
