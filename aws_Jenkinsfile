@@ -59,7 +59,7 @@ pipeline {
                         env.AWS_Account_Id              = "534375227638"
                         env.AWS_Region                  = "ap-south-1"
                         env.BRANCH                      = "release/prod"
-                        env.DOCKER_IMAGE_REPOSITORY_NAME= "	se-prod-flink-can-parser"
+                        env.DOCKER_IMAGE_REPOSITORY_NAME= "se-prod-flink-can-parser"
                         env.secretId                    = "flink/se-prod-canparser-envs"
                         env.IMAGE_TAG                   = env.RELEASE_TAG
                         // env.Helm_Branch                 = 'prod'
