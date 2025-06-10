@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 from kafka.admin import KafkaAdminClient
-from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitializer
+from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitializer, KafkaOffsetResetStrategy
 from pyflink.common.serialization import SimpleStringSchema
 
 load_dotenv()
@@ -72,7 +72,7 @@ class KafkaConfig:
             .set_bootstrap_servers(KafkaConfig.CONSUMER_BROKER) \
             .set_topics(KafkaConfig.INPUT_TOPIC) \
             .set_group_id(KafkaConfig.CONSUMER_GROUP_ID) \
-            .set_starting_offsets(KafkaOffsetsInitializer.latest()) \
+            .set_starting_offsets(KafkaOffsetsInitializer.committed_offsets(offset_reset_strategy=KafkaOffsetResetStrategy.LATEST)) \
             .set_value_only_deserializer(SimpleStringSchema()) \
             .set_property("security.protocol", KafkaConfig.SECURITY_PROTOCOL) \
             .set_property("sasl.mechanism", KafkaConfig.SASL_MECHANISMS) \
