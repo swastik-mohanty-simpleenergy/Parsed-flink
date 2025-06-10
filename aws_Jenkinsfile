@@ -50,7 +50,7 @@ pipeline {
 	                    // env.Microservice_Name           = 'flink-stage'
 		                // env.Helm_Directory_Name         = 'diagnostic'
 		                env.Namespace                   = 'flink-stage'
-		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-canparser-stage/.env'
+		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-stage-canparser/.env'
                         // env.EKS_Cluster_Name            = 'simpleenergy-dev-eks-cluster'
                         
                     }
@@ -59,14 +59,14 @@ pipeline {
                         env.AWS_Account_Id              = "534375227638"
                         env.AWS_Region                  = "ap-south-1"
                         env.BRANCH                      = "release/prod"
-                        env.DOCKER_IMAGE_REPOSITORY_NAME= "	se-prod-flink-can-parser"
+                        env.DOCKER_IMAGE_REPOSITORY_NAME= "se-prod-flink-can-parser"
                         env.secretId                    = "flink/se-prod-canparser-envs"
                         env.IMAGE_TAG                   = env.RELEASE_TAG
                         // env.Helm_Branch                 = 'prod'
 	                    // env.Microservice_Name           = 'flink-prod'
 		                // env.Helm_Directory_Name         = 'diagnostic'
 		                env.Namespace                   = 'flink-prod'
-		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-canparser-prod/.env'
+		                env.ENV_FILE                    = '/var/lib/jenkins/workspace/flink-prod-canparser/.env'    
                         // env.EKS_Cluster_Name            = 'simpleenergy-prod-eks-cluster'
 
                     }
@@ -152,7 +152,7 @@ pipeline {
         stage('Download dbc file from S3') {
             steps {
                 sh '''
-                    aws s3 cp s3://se-prod-secrets-bucket/flink/dbc_files.zip ./dbc_files.zip 
+                    aws s3 cp s3://se-prod-secrets-bucket/flink/dbc_files ./dbc_files
                 '''
             }
         }
