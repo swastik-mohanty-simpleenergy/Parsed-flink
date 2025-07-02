@@ -79,5 +79,4 @@ class KafkaConfig:
             .set_property("sasl.jaas.config",
                           f"org.apache.kafka.common.security.scram.ScramLoginModule required "
                           f"username='{KafkaConfig.CONSUMER_USERNAME}' password='{KafkaConfig.CONSUMER_PASSWORD}';") \
-            .set_property("enable.auto.commit", "true") \
             .build()
