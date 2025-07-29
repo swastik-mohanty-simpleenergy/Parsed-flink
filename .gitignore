@@ -6,3 +6,4 @@ myenv/
 __pycache__/
 dbc_files/
 dependencies.zip
+.DS_Store
